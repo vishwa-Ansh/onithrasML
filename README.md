@@ -1,35 +1,205 @@
-onithrasML
+# onithrasML
 
-onithrasML is an open-source machine learning library for Python, designed to provide simple and efficient implementations of common machine learning utilities and algorithms.
+> A Python machine learning library with a Python-friendly API and a C++ backend for performance-oriented computation.
 
-The library combines a Python interface with a C++ backend for performance-oriented computation.
+`onithrasML` is an open-source machine learning library for Python, designed to provide simple and efficient implementations of common machine learning algorithms, preprocessing utilities, and model-selection tools.
 
-Features
+## ✨ Features
 
-* Data imputation utilities
-* Feature scaling utilities
-* Linear Regression
-* Logistic Regression
-* Decision Tree
-* Model selection utilities
-* C++ backend for computationally intensive operations
-* Simple Python API
-* Easy integration into machine learning projects
+- 📊 Data imputation utilities
+- 📐 Feature scaling utilities
+- 📈 Linear Regression
+- 🎯 Logistic Regression
+- 🌳 Decision Tree
+- 🔍 Model selection utilities
+- ⚡ C++ backend for performance-critical operations
+- 🐍 Simple Python API
+- 🔌 Easy integration into machine learning projects
 
-Installation
+---
 
-Install the latest version from PyPI:
+## 📦 Installation
 
+Install the latest published version from PyPI:
+
+```bash
 pip install onithrasml
+```
 
-Quick Start
+Or:
 
+```bash
+python -m pip install onithrasml
+```
+
+### Upgrade
+
+```bash
+python -m pip install --upgrade onithrasml
+```
+
+### Install a specific version
+
+```bash
+python -m pip install onithrasml==0.1.0
+```
+
+### Verify Installation
+
+```bash
+python -c "import onithrasML; print(onithrasML.__file__)"
+```
+
+You can also check the installed package:
+
+```bash
+python -m pip show onithrasml
+```
+
+---
+
+## 🚀 Quick Start
+
+After installation, import `onithrasML` in Python:
+
+```python
 import onithrasML
 
-You can then use the modules provided by the library according to your machine learning workflow.
+print(onithrasML)
+```
 
-Project Structure
+You can also verify the installation directly from the terminal:
 
+```bash
+python -c "import onithrasML; print('onithrasML installed successfully')"
+```
+
+---
+
+## 🤖 Machine Learning Models
+
+### Linear Regression
+
+```python
+from onithrasML.linear_model import LinearRegression
+
+model = LinearRegression()
+
+model.fit(X_train, y_train)
+
+predictions = model.predict(X_test)
+
+print(predictions)
+```
+
+### Logistic Regression
+
+```python
+from onithrasML.linear_model import LogisticRegression
+
+model = LogisticRegression()
+
+model.fit(X_train, y_train)
+
+predictions = model.predict(X_test)
+
+print(predictions)
+```
+
+### Example with NumPy
+
+```python
+import numpy as np
+
+from onithrasML.linear_model import LinearRegression
+
+X_train = np.array([
+    [1.0],
+    [2.0],
+    [3.0],
+    [4.0]
+])
+
+y_train = np.array([
+    2.0,
+    4.0,
+    6.0,
+    8.0
+])
+
+X_test = np.array([
+    [5.0],
+    [6.0]
+])
+
+model = LinearRegression()
+
+model.fit(X_train, y_train)
+
+predictions = model.predict(X_test)
+
+print(predictions)
+```
+
+> **Note:** The exact classes, constructor arguments, and methods available depend on the installed version of `onithrasML`.
+
+---
+
+## 🧩 Imputation
+
+The `imputer` module provides utilities for handling missing values in datasets.
+
+Example:
+
+```python
+from onithrasML import imputer
+```
+
+If your installed version exposes a specific imputer class or function, import it from the module:
+
+```python
+from onithrasML.imputer import YourImputer
+```
+
+---
+
+## 🔍 Model Selection
+
+The `model_selection` module provides utilities for selecting and evaluating machine learning models.
+
+Example:
+
+```python
+from onithrasML import model_selection
+```
+
+A specific utility can be imported according to the API exposed by your installed version:
+
+```python
+from onithrasML.model_selection import YourUtility
+```
+
+---
+
+## ⚡ C++ Backend
+
+Performance-critical components are implemented in C++ and exposed to Python through bindings.
+
+The C++ backend currently contains components related to:
+
+- Linear Regression
+- Logistic Regression
+- Decision Tree
+
+This allows computationally intensive operations to run using native compiled code while maintaining a Python-friendly API.
+
+The C++ source code is maintained in the `cpp/` directory during development.
+
+---
+
+## 📁 Project Structure
+
+```text
 onithrasML/
 ├── src/
 │   └── onithrasML/
@@ -50,104 +220,282 @@ onithrasML/
 ├── README.md
 ├── LICENSE
 └── pyproject.toml
+```
 
-Machine Learning Models
+---
 
-Linear Regression
+## 🛠️ Development Setup
 
-from onithrasML.linear_model import LinearRegression
-model = LinearRegression()
-model.fit(X_train, y_train)
-predictions = model.predict(X_test)
+### 1. Clone the Repository
 
-Logistic Regression
-
-from onithrasML.linear_model import LogisticRegression
-model = LogisticRegression()
-model.fit(X_train, y_train)
-predictions = model.predict(X_test)
-
-Imputation
-
-The imputer module provides utilities for handling missing values in datasets.
-
-from onithrasML.imputer import ...
-
-Model Selection
-
-The model_selection module contains utilities useful for selecting and evaluating machine learning models.
-
-from onithrasML.model_selection import ...
-
-C++ Backend
-
-Performance-critical components are implemented in C++ and exposed to Python through bindings.
-
-The C++ backend currently includes implementations related to:
-
-* Linear Regression
-* Logistic Regression
-* Decision Tree
-
-This allows computationally intensive operations to be executed using native compiled code while maintaining a Python-friendly API.
-
-Development
-
-Clone the repository:
-
+```bash
 git clone https://github.com/vishwa-Ansh/onithrasML.git
+
 cd onithrasML
+```
 
-Create a virtual environment:
+### 2. Create a Virtual Environment
 
+```bash
 python -m venv .venv
+```
+
+### 3. Activate the Environment
+
+**macOS / Linux**
+
+```bash
 source .venv/bin/activate
+```
 
-Install the development dependencies:
+**Windows PowerShell**
 
-pip install -r requirements.txt
+```powershell
+.venv\Scripts\Activate.ps1
+```
 
-Build the package:
+### 4. Install Development Tools
+
+```bash
+python -m pip install --upgrade pip
+
+python -m pip install build twine pytest
+```
+
+### 5. Install the Project
+
+Install it in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+---
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+pytest
+```
+
+Or:
+
+```bash
+python -m pytest
+```
+
+---
+
+## 📦 Building the Package
+
+Build the source distribution and wheel:
+
+```bash
+python -m build
+```
+
+The generated packages will appear inside the `dist/` directory:
+
+```text
+dist/
+├── onithrasml-<version>.tar.gz
+└── onithrasml-<version>-py3-none-any.whl
+```
+
+---
+
+## ✅ Validate Before Publishing
+
+Before uploading the package to PyPI, run:
+
+```bash
+python -m twine check dist/*
+```
+
+Both distributions should report:
+
+```text
+PASSED
+```
+
+---
+
+## 🚀 Publishing to PyPI
+
+Before publishing a new release, update the version in `pyproject.toml`.
+
+For example:
+
+```toml
+version = "0.1.1"
+```
+
+### Remove Previous Build Files
+
+```bash
+rm -rf dist build src/*.egg-info
+```
+
+### Build the New Release
+
+```bash
+python -m build
+```
+
+### Validate the Release
+
+```bash
+python -m twine check dist/*
+```
+
+### Upload to PyPI
+
+```bash
+python -m twine upload dist/*
+```
+
+When Twine asks for credentials, use:
+
+```text
+Username: __token__
+Password: <your PyPI API token>
+```
+
+> 🔐 **Security:** Never commit your PyPI API token to Git or put it inside your source code.
+
+---
+
+## 🔄 Release Workflow
+
+```text
+Make changes
+      ↓
+Update tests and documentation
+      ↓
+Increment package version
+      ↓
+Remove old build files
+      ↓
+Build package
+      ↓
+Run twine check
+      ↓
+Upload to PyPI
+      ↓
+Install and verify
+```
+
+Typical release commands:
+
+```bash
+rm -rf dist build src/*.egg-info
 
 python -m build
 
-Check the distributions:
+python -m twine check dist/*
+
+python -m twine upload dist/*
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### `ModuleNotFoundError: No module named 'onithrasML'`
+
+Make sure the package is installed in the same Python environment:
+
+```bash
+python -m pip install --upgrade onithrasml
+```
+
+Then verify:
+
+```bash
+python -c "import onithrasML; print(onithrasML.__file__)"
+```
+
+### `zsh: command not found: import`
+
+`import` is Python syntax, not a terminal command.
+
+Start Python:
+
+```bash
+python
+```
+
+Then:
+
+```python
+import onithrasML
+```
+
+Or use:
+
+```bash
+python -c "import onithrasML"
+```
+
+### PyPI Returns `HTTP 400 Bad Request`
+
+A common reason is trying to upload a version that already exists on PyPI.
+
+Update the version in `pyproject.toml`:
+
+```toml
+version = "0.1.1"
+```
+
+Then rebuild and upload:
+
+```bash
+rm -rf dist build src/*.egg-info
+
+python -m build
 
 python -m twine check dist/*
 
-Testing
+python -m twine upload dist/*
+```
 
-Run the test suite with:
+---
 
-pytest
+## 🤝 Contributing
 
-Benchmarks
+Contributions, bug reports, feature requests, documentation improvements, and performance improvements are welcome.
 
-Benchmark programs are available in the benchmarks/ directory and can be used to evaluate the performance of the implemented algorithms.
-
-License
-
-This project is open source. See the LICENSE file for details.
-
-Contributing
-
-Contributions, bug reports, feature requests, and improvements are welcome.
-
-To contribute:
+### How to Contribute
 
 1. Fork the repository.
 2. Create a new branch.
 3. Make your changes.
 4. Add or update tests.
-5. Commit your changes.
-6. Open a pull request.
+5. Run the test suite.
+6. Commit your changes.
+7. Push your branch.
+8. Open a pull request.
 
-Author
+---
 
-Ansh Vishwakarma
+## 📄 License
 
-GitHub: https://github.com/vishwa-Ansh
+This project is open source.
 
-Project
+See the [`LICENSE`](LICENSE) file for the license terms.
 
-onithrasML — Machine Learning library for Python with a C++ backend.
+---
+
+## 👨‍💻 Author
+
+**Ansh Vishwakarma**
+
+GitHub: [vishwa-Ansh](https://github.com/vishwa-Ansh)
+
+---
+
+## 📌 Project
+
+**onithrasML** — Machine learning library for Python with a C++ backend.

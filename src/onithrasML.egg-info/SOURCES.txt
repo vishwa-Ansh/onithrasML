@@ -2,6 +2,11 @@ LICENSE
 README.md
 pyproject.toml
 src/onithrasML/__init__.py
+src/onithrasML.egg-info/._PKG-INFO
+src/onithrasML.egg-info/._SOURCES.txt
+src/onithrasML.egg-info/._dependency_links.txt
+src/onithrasML.egg-info/._requires.txt
+src/onithrasML.egg-info/._top_level.txt
 src/onithrasML.egg-info/PKG-INFO
 src/onithrasML.egg-info/SOURCES.txt
 src/onithrasML.egg-info/dependency_links.txt
@@ -15,6 +20,9 @@ src/onithrasML/linear_model/linear_regression.py
 src/onithrasML/linear_model/logistic_regression.py
 src/onithrasML/model_selection/cross_validation.py
 src/onithrasML/model_selection/train_test_split.py
+src/onithrasML/numerical/__init__.py
+src/onithrasML/numerical/linalg/__init__.py
+src/onithrasML/numerical/linalg/_solve.py
 tests/test_imputer.py
 tests/test_linear_regression.py
 tests/test_logistic_regression.py

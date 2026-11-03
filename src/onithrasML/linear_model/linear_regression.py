@@ -1,14 +1,397 @@
-from .._backend import predict
+"""
+linear_regression.py
+
+A complete, from-scratch Linear Regression implementation.
+
+Supports:
+    - Ordinary Least Squares via Normal Equation (closed-form)
+    - Gradient Descent (batch)
+    - Optional L2 regularization (Ridge)
+    - Feature scaling (standardization)
+    - Multi-output regression
+    - Comprehensive input validation and error handling
+
+Author: Ansh vishwakarma 
+License: MIT
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from typing import Optional, Literal
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
+# ---------------------------------------------------------------------------
+# Custom exceptions
+# ---------------------------------------------------------------------------
+
+class LinearRegressionError(Exception):
+    """Base exception for all LinearRegression errors."""
+
+
+class NotFittedError(LinearRegressionError):
+    """Raised when prediction is attempted before fitting the model."""
+
+
+class InvalidInputError(LinearRegressionError):
+    """Raised when input arrays have invalid shape, dtype, or values."""
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+@dataclass
+class LinearRegressionConfig:
+    """
+    Configuration for the LinearRegression model.
+
+    Parameters
+    ----------
+    method : {"normal", "gd"}
+        Solver to use. "normal" uses the closed-form normal equation,
+        "gd" uses batch gradient descent.
+    learning_rate : float
+        Step size for gradient descent. Ignored if method="normal".
+    n_iterations : int
+        Number of gradient descent iterations. Ignored if method="normal".
+    tol : float
+        Convergence tolerance for gradient descent. Training stops early
+        when the change in loss is smaller than this value.
+    l2_penalty : float
+        L2 regularization strength (Ridge). 0.0 means no regularization.
+        Note: the intercept is never regularized.
+    fit_intercept : bool
+        Whether to fit an intercept term.
+    standardize : bool
+        Whether to standardize features (zero mean, unit variance) before
+        training. Strongly recommended for gradient descent.
+    verbose : bool
+        If True, logs loss every `log_every` iterations during GD.
+    log_every : int
+        Logging frequency for gradient descent.
+    """
+    method: Literal["normal", "gd"] = "normal"
+    learning_rate: float = 0.01
+    n_iterations: int = 1000
+    tol: float = 1e-8
+    l2_penalty: float = 0.0
+    fit_intercept: bool = True
+    standardize: bool = True
+    verbose: bool = False
+    log_every: int = 100
+
+    def __post_init__(self) -> None:
+        if self.method not in ("normal", "gd"):
+            raise ValueError(f"method must be 'normal' or 'gd', got {self.method!r}")
+        if self.learning_rate <= 0:
+            raise ValueError("learning_rate must be positive")
+        if self.n_iterations <= 0:
+            raise ValueError("n_iterations must be positive")
+        if self.tol < 0:
+            raise ValueError("tol must be non-negative")
+        if self.l2_penalty < 0:
+            raise ValueError("l2_penalty must be non-negative")
+        if self.log_every <= 0:
+            raise ValueError("log_every must be positive")
+
+
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
+
+@dataclass
 class LinearRegression:
+    """
+    Linear Regression model implemented from scratch.
 
-    def __init__(self, weight=1.0, bias=0.0):
-        self.weight = weight
-        self.bias = bias
+    The model learns weights `coef_` and intercept `intercept_` such that
+    predictions approximate `y = X @ coef_ + intercept_`.
 
-    def predict(self, X):
-        return [
-            predict(float(x), self.weight, self.bias)
-            for x in X
-        ]
+    Attributes
+    ----------
+    coef_ : np.ndarray of shape (n_features,) or (n_features, n_targets)
+        Learned feature weights. Set after `fit`.
+    intercept_ : float or np.ndarray of shape (n_targets,)
+        Learned intercept(s). Set after `fit`.
+    n_features_in_ : int
+        Number of features seen during fit.
+    loss_history_ : list[float]
+        Loss at each gradient descent iteration (empty for normal equation).
+    is_fitted_ : bool
+        True if the model has been successfully trained.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> X = np.array([[1.0], [2.0], [3.0], [4.0]])
+    >>> y = np.array([2.0, 4.0, 6.0, 8.0])
+    >>> model = LinearRegression(LinearRegressionConfig(method="normal"))
+    >>> model.fit(X, y)
+    >>> float(model.predict(np.array([[5.0]]))[0])
+    10.0
+    """
+    config: LinearRegressionConfig = field(default_factory=LinearRegressionConfig)
+
+    coef_: Optional[np.ndarray] = field(default=None, init=False)
+    intercept_: Optional[np.ndarray | float] = field(default=None, init=False)
+    n_features_in_: Optional[int] = field(default=None, init=False)
+    loss_history_: list[float] = field(default_factory=list, init=False)
+    is_fitted_: bool = field(default=False, init=False)
+
+    # Internal scaler state
+    _feature_mean: Optional[np.ndarray] = field(default=None, init=False, repr=False)
+    _feature_std: Optional[np.ndarray] = field(default=None, init=False, repr=False)
+    _y_mean: Optional[np.ndarray] = field(default=None, init=False, repr=False)
+
+    # ---------------------------------------------------------------
+    # Public API
+    # ---------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "LinearRegression":
+        """
+        Fit the model to training data.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Training features. Must be numeric and finite.
+        y : np.ndarray of shape (n_samples,) or (n_samples, n_targets)
+            Target values. Must be numeric and finite.
+
+        Returns
+        -------
+        self : LinearRegression
+            Fitted model.
+
+        Raises
+        ------
+        InvalidInputError
+            If inputs are empty, contain NaN/Inf, or shapes are inconsistent.
+        LinearRegressionError
+            If the solver fails numerically (e.g., singular matrix).
+        """
+        X, y = self._validate_fit_input(X, y)
+
+        self.n_features_in_ = X.shape[1]
+        self.loss_history_ = []
+
+        # Standardize features
+        if self.config.standardize:
+            self._feature_mean = X.mean(axis=0)
+            self._feature_std = X.std(axis=0)
+            # Avoid division by zero for constant features
+            self._feature_std[self._feature_std == 0.0] = 1.0
+            X_scaled = (X - self._feature_mean) / self._feature_std
+        else:
+            self._feature_mean = None
+            self._feature_std = None
+            X_scaled = X
+
+        # Center y if fitting an intercept (helps numerical stability)
+        if self.config.fit_intercept:
+            self._y_mean = y.mean(axis=0)
+            y_centered = y - self._y_mean
+        else:
+            self._y_mean = None
+            y_centered = y
+
+        if self.config.method == "normal":
+            weights = self._solve_normal_equation(X_scaled, y_centered)
+        else:
+            weights = self._solve_gradient_descent(X_scaled, y_centered)
+
+        # Convert weights back to original feature space
+        if self.config.standardize:
+            self.coef_ = weights / self._feature_std
+            if self.config.fit_intercept:
+                self.intercept_ = self._y_mean - self._feature_mean @ self.coef_
+            else:
+                self.intercept_ = 0.0
+        else:
+            self.coef_ = weights
+            self.intercept_ = self._y_mean if self.config.fit_intercept else 0.0
+
+        self.is_fitted_ = True
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Predict target values for given features.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Features to predict on. Must have the same number of features
+            as the training data.
+
+        Returns
+        -------
+        y_pred : np.ndarray of shape (n_samples,) or (n_samples, n_targets)
+            Predicted values.
+
+        Raises
+        ------
+        NotFittedError
+            If `predict` is called before `fit`.
+        InvalidInputError
+            If X has wrong shape or contains NaN/Inf.
+        """
+        if not self.is_fitted_:
+            raise NotFittedError("This LinearRegression instance is not fitted yet. Call 'fit' first.")
+
+        X = self._validate_predict_input(X)
+        return X @ self.coef_ + self.intercept_
+
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
+        """
+        Return the R^2 (coefficient of determination) of the prediction.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+        y : np.ndarray of shape (n_samples,) or (n_samples, n_targets)
+
+        Returns
+        -------
+        r2 : float
+            R^2 score. 1.0 means perfect prediction.
+
+        Notes
+        -----
+        For multi-output targets, returns the uniform average of per-target R^2.
+        """
+        y_pred = self.predict(X)
+        y = np.asarray(y, dtype=np.float64)
+        ss_res = np.sum((y - y_pred) ** 2, axis=0)
+        ss_tot = np.sum((y - y.mean(axis=0)) ** 2, axis=0)
+        # Guard against zero variance targets
+        ss_tot = np.where(ss_tot == 0.0, 1.0, ss_tot)
+        return float(np.mean(1.0 - ss_res / ss_tot))
+
+    # ---------------------------------------------------------------
+    # Solvers
+    # ---------------------------------------------------------------
+
+    def _solve_normal_equation(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Solve for weights using the (regularized) normal equation.
+
+        Closed-form solution: w = (X^T X + λI)^{-1} X^T y
+
+        For numerical stability we use `np.linalg.solve` instead of
+        computing the inverse explicitly.
+        """
+        n_features = X.shape[1]
+        XtX = X.T @ X
+        if self.config.l2_penalty > 0:
+            XtX = XtX + self.config.l2_penalty * np.eye(n_features)
+        Xty = X.T @ y
+        try:
+            weights = np.linalg.solve(XtX, Xty)
+        except np.linalg.LinAlgError as exc:
+            raise LinearRegressionError(
+                "Normal equation failed: matrix is singular. "
+                "Try increasing l2_penalty or using gradient descent."
+            ) from exc
+        return weights
+
+    def _solve_gradient_descent(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Solve for weights using batch gradient descent.
+
+        Minimizes J(w) = (1/n) * ||Xw - y||^2 + λ ||w||^2
+        (λ applied only to weights, not to the intercept — which is
+        handled separately via y-centering.)
+        """
+        n_samples, n_features = X.shape
+        weights = np.zeros((n_features,) + y.shape[1:], dtype=np.float64)
+        prev_loss = np.inf
+
+        for i in range(self.config.n_iterations):
+            y_pred = X @ weights
+            residuals = y_pred - y
+            loss = float(np.mean(residuals ** 2))
+            if self.config.l2_penalty > 0:
+                loss += self.config.l2_penalty * float(np.sum(weights ** 2))
+            self.loss_history_.append(loss)
+
+            if self.config.verbose and (i % self.config.log_every == 0 or i == 0):
+                logger.info("GD iter %d: loss = %.6f", i, loss)
+
+            # Gradient: (2/n) X^T (y_pred - y) + 2λ w
+            grad = (2.0 / n_samples) * (X.T @ residuals)
+            if self.config.l2_penalty > 0:
+                grad = grad + 2.0 * self.config.l2_penalty * weights
+
+            weights = weights - self.config.learning_rate * grad
+
+            if abs(prev_loss - loss) < self.config.tol:
+                if self.config.verbose:
+                    logger.info("Converged at iteration %d (loss=%.6f)", i, loss)
+                break
+            prev_loss = loss
+
+        return weights
+
+    # ---------------------------------------------------------------
+    # Validation helpers
+    # ---------------------------------------------------------------
+
+    @staticmethod
+    def _validate_fit_input(
+        X: np.ndarray, y: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Validate and coerce X, y for fitting."""
+        X = np.asarray(X, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
+        if y.ndim == 1:
+            y = y.reshape(-1, 1)
+
+        if X.ndim != 2:
+            raise InvalidInputError(f"X must be 1D or 2D, got shape {X.shape}")
+        if y.ndim != 2:
+            raise InvalidInputError(f"y must be 1D or 2D, got shape {y.shape}")
+        if X.shape[0] == 0:
+            raise InvalidInputError("X is empty (0 samples)")
+        if X.shape[0] != y.shape[0]:
+            raise InvalidInputError(
+                f"X and y have inconsistent sample counts: {X.shape[0]} vs {y.shape[0]}"
+            )
+        if X.shape[1] == 0:
+            raise InvalidInputError("X has 0 features")
+        if not np.all(np.isfinite(X)):
+            raise InvalidInputError("X contains NaN or Inf values")
+        if not np.all(np.isfinite(y)):
+            raise InvalidInputError("y contains NaN or Inf values")
+
+        # Flatten single-target y to 1D for cleaner coef_ shape
+        if y.shape[1] == 1:
+            y = y.ravel()
+        return X, y
+
+    def _validate_predict_input(self, X: np.ndarray) -> np.ndarray:
+        """Validate X for prediction."""
+        X = np.asarray(X, dtype=np.float64)
+        if X.ndim == 1:
+            X = X.reshape(-1, 1)
+        if X.ndim != 2:
+            raise InvalidInputError(f"X must be 1D or 2D, got shape {X.shape}")
+        if X.shape[1] != self.n_features_in_:
+            raise InvalidInputError(
+                f"X has {X.shape[1]} features, but model was trained on {self.n_features_in_}"
+            )
+        if X.shape[0] == 0:
+            raise InvalidInputError("X is empty (0 samples)")
+        if not np.all(np.isfinite(X)):
+            raise InvalidInputError("X contains NaN or Inf values")
+        return X

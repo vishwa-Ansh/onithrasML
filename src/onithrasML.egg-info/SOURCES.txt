@@ -18,6 +18,8 @@ src/onithrasML/imputer/simple_imputers.py
 src/onithrasML/linear_model/__init__.py
 src/onithrasML/linear_model/linear_regression.py
 src/onithrasML/linear_model/logistic_regression.py
+src/onithrasML/metrics/__init__.py
+src/onithrasML/model_selection/__init__.py
 src/onithrasML/model_selection/cross_validation.py
 src/onithrasML/model_selection/train_test_split.py
 src/onithrasML/numerical/__init__.py

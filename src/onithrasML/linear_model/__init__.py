@@ -1,5 +1,9 @@
-# File: src/onithrasML/linear_model/__init__.py
-
 from .linear_regression import LinearRegression, LinearRegressionConfig
+from .logistic_regression import LogisticRegression, LogisticRegressionConfig
 
-__all__ = ["LinearRegression", "LinearRegressionConfig"]
+__all__ = [
+    "LinearRegression", 
+    "LinearRegressionConfig", 
+    "LogisticRegression", 
+    "LogisticRegressionConfig"
+]

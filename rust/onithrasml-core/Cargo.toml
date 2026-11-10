@@ -1,0 +1,14 @@
+[package]
+name = "onithrasml-core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "onithrasml_core"
+path = "src/lib.rs"
+
+[dependencies]
+ndarray = "0.16"
+nalgebra = "0.33"
+rayon = "1.10"
+thiserror = "2"

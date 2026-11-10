@@ -1,0 +1,14 @@
+
+[package]
+name = "onithrasml-python"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+onithrasml-core = { path = "../onithrasml-core" }
+pyo3 = { version = "0.30", features = ["extension-module"] }
+numpy = "0.30"

@@ -8,7 +8,7 @@ name = "onithrasml_core"
 path = "src/lib.rs"
 
 [dependencies]
-ndarray = "0.16"
+ndarray = "0.17"
 nalgebra = "0.33"
 rayon = "1.10"
 thiserror = "2"

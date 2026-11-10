@@ -50,7 +50,7 @@ impl LinearRegression {
             .predict(&x)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
-        Ok(predictions.into_pyarray_bound(py).unbind())
+        Ok(predictions.into_pyarray(py).unbind())
     }
 }
 

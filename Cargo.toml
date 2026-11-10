@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "crates/onithrasml-core",
+    "crates/onithrasml-python"
+]
+resolver = "3"

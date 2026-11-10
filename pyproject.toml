@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61", "pybind11"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "onithrasML"
@@ -13,5 +13,8 @@ dependencies = [
     "pybind11"
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.maturin]
+manifest-path = "crates/onithrasml-python/Cargo.toml"
+python-source = "python/src"
+module-name = "onithrasML._backend._native"
+bindings = "pyo3"
